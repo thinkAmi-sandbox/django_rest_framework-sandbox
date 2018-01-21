@@ -4,9 +4,21 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.parsers import JSONParser
 from rest_framework import status
+from rest_framework.reverse import reverse
 
 from snippets.models import Snippet
 from snippets.serializers import SnippetSerializer
+
+
+# APIのルート
+@api_view(['GET', ])
+def api_root(request, format=None):
+    return Response({
+        # 完全修飾URLを返すために、reverse関数を使う
+        # 'user-list'などの名前をつけた場合は、urls.pyでもname引数を指定しないとエラーで動作しなくなる
+        'users': reverse('user-list', request=request, format=format),
+        'snippet': reverse('snippet-list', request=request, format=format),
+    })
 
 
 # CSRFトークンを持たないクライアントからビューにPOSTできるようにするためのデコレータ

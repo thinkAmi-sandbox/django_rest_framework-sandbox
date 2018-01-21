@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Snippet, LANGUAGE_CHOICES, STYLE_CHOICES
+from django.contrib.auth.models import User
 
 
 class SnippetSerializer(serializers.Serializer):
@@ -37,8 +38,49 @@ class SnippetSerializer(serializers.Serializer):
 
 
 class SnippetModelSerializer(serializers.ModelSerializer):
+    # 引数source：フィールドにセットされる値を制御する
+    # シリアライズされた任意の属性を指定できる
+    # ReadOnlyFieldは読み取り専用：デシリアライズされた時にモデルインスタンスを更新することはない
+    # (今回のケースなら、"CharField(read_only=True)"も使える
+    owner = serializers.ReadOnlyField(source='owner.username')
+
     class Meta:
         model = Snippet
         # Modelのうち、必要なフィールドをタプルとして用意
         # チュートリアルとは異なり、styleを削ってみる
-        fields = ('id', 'title', 'code', 'linenos', 'language',)
+        # ownerというReadOnlyFieldを追加したので、fieldとして扱えるよう、ownerを加える
+        fields = ('id', 'title', 'code', 'linenos', 'language', 'owner')
+
+
+class UserSerializer(serializers.ModelSerializer):
+    # リバースリレーションシップなため、ModelSerializerを使うだけでは、デフォルトではフィールドに含まれない
+    # そのため、明示的にフィールドを追加する必要がある
+    snippets = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=Snippet.objects.all())
+
+    class Meta:
+        model = User
+        # Userモデルの持っているid, usernameの他、上で定義したsnippetsもフィールドとして有効化
+        fields = ('id', 'username', 'snippets')
+
+
+# HyperlinkedModelSerializerを使って、エンティティ間の関連を表す
+class SnippetHyperLinkedSerializer(serializers.HyperlinkedModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+    # formatがhtmlなため、highlightではどんなフォーマットが指定されても
+    # `.html` suffixが指定されたものとして、動作させる必要がある
+    highlight = serializers.HyperlinkedIdentityField(view_name='snippet-highlight', format='html')
+
+    class Meta:
+        model = Snippet
+        fields = ('url', 'id', 'highlight', 'owner',
+                  'title', 'code', 'linenos', 'language', 'style')
+
+
+class UserHyperLinkedSerializer(serializers.HyperlinkedModelSerializer):
+    snippets = serializers.HyperlinkedRelatedField(
+        many=True, view_name='snippet-detail', read_only=True)
+
+    class Meta:
+        model = User
+        fields = ('url', 'id', 'username', 'snippets')
