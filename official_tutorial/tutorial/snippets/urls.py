@@ -1,9 +1,34 @@
 from django.conf.urls import re_path, include
-from snippets import views
-from snippets import class_views
-from snippets import mixin_views
-from snippets import generic_views
+from rest_framework import renderers
 from rest_framework.urlpatterns import format_suffix_patterns
+from rest_framework.routers import DefaultRouter
+
+from snippets import class_views
+from snippets import generic_views
+from snippets import mixin_views
+from snippets import views
+from .view_sets import SnippetViewSet, UserViewSet
+
+# ViewSetを実際のクラスに割り当てるための変数
+snippet_list = SnippetViewSet.as_view({
+    'get': 'list',
+    'post': 'create'
+})
+snippet_detail = SnippetViewSet.as_view({
+    'get': 'retrieve',
+    'put': 'update',
+    'patch': 'partial_update',
+    'delete': 'destroy'
+})
+snippet_highlight = SnippetViewSet.as_view({
+    'get': 'highlight'
+}, renderer_classes=[renderers.StaticHTMLRenderer])
+user_list = UserViewSet.as_view({
+    'get': 'list'
+})
+user_detail = UserViewSet.as_view({
+    'get': 'retrieve'
+})
 
 urlpatterns = [
     # Django 2.0からはurlではなく、re_path()に変わった
@@ -41,12 +66,19 @@ urlpatterns = [
             name='user-detail'),
 
     # APIのルート (非ジェネリックなviewで作成している)
-    re_path(r'^$', views.api_root),
+    # re_path(r'^$', views.api_root),
 
     # シンタックスハイライトのある、静的なHTMLをレンダリングするURL
     # SnippetSerializerから参照されている
     re_path(r'^snippets5/(?P<pk>[0-9]+)/highlight/$', generic_views.SnippetHighlight.as_view(),
             name='snippet-highlight'),
+
+    # ViewSetを使った手動ルーティング
+    re_path(r'^snippets6/$', snippet_list, name='snippet-list'),
+    re_path(r'^snippets6/(?P<pk>[0-9]+)/$', snippet_detail, name='snippet-detail'),
+    re_path(r'^snippets6/(?P<pk>[0-9]+)/highlight/$', snippet_highlight, name='snippet-highlight'),
+    re_path(r'^users6/$', user_list, name='user-list'),
+    re_path(r'^users6/(?P<pk>[0-9]+)/$', user_detail, name='user-detail'),
 ]
 
 # フォーマットsuffix を使えるように設定する

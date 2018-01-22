@@ -21,4 +21,7 @@ urlpatterns = [
     # Django 2.0からはurlではなく、re_path()に変わった
     # https://docs.djangoproject.com/en/2.0/ref/urls/#url
     re_path(r'^', include('snippets.urls')),
+
+    # ViewSet + Routerを使うパターン
+    re_path(r'^vs/', include('snippets.viewsets_urls')),
 ]
